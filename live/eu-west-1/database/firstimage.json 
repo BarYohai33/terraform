@@ -1,0 +1,63 @@
+{
+  "variables": {
+    "aws_access_key": "",
+    "aws_secret_key": ""
+  },
+  "builders": [{
+    "type": "amazon-ebs",
+    "access_key": "{{user `aws_access_key`}}",
+    "secret_key": "{{user `aws_secret_key`}}",
+    "region": "eu-west-1",
+    "source_ami_filter": {
+      "filters": {
+        "virtualization-type": "hvm",
+        "name": "ubuntu/images/*ubuntu-xenial-16.04-amd64-server-*",
+        "root-device-type": "ebs"
+      },
+      "owners": ["099720109477"],
+      "most_recent": true
+    },
+    "instance_type": "t2.micro",
+    "ssh_username": "ubuntu",
+    "ami_name": "packer-example {{timestamp}}"
+  }],
+"provisioners": [{
+    "type":             "shell",
+    "inline_shebang":   "/bin/bash -e",
+    "environment_vars": ["DEBIAN_FRONTEND=noninteractive"],
+    "inline": [
+      "unset HISTFILE",
+      "history -cw",
+
+      "echo ===> Waiting for EC2 Instance boot",
+      "timeout 180 /bin/bash -c 'until stat /var/lib/cloud/instance/boot-finished &>/dev/null; do echo waiting...; sleep 6; done'",
+
+      "sudo apt-get update",
+      "sudo apt-get -y upgrade",
+
+      "sudo apt-get install git wget -yy",
+      "cd /tmp && wget https://dl.google.com/go/go1.11.linux-amd64.tar.gz",
+
+      "sudo tar -xvf go1.11.linux-amd64.tar.gz",
+      "sudo mv go /usr/local",
+
+      "export GOROOT=/usr/local/go",
+      "export GOPATH=$HOME/go",
+      "export PATH=$GOPATH/bin:$GOROOT/bin:$PATH",
+
+      "mkdir -p ~/go/src/douglasmakey/",
+      "cd ~/go/src/douglasmakey",
+      "git clone https://github.com/douglasmakey/ursho.git",
+      "cd ursho",
+
+      "go get",
+      "go build",
+
+      "sudo mv ./ursho /bin/",
+
+      "cd ~",
+      "rm -rf ~/go",
+      "sudo apt purge --auto-remove -yy git wget"
+    ]
+  }]
+}

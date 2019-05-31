@@ -1,0 +1,3 @@
+1) export the keys on the .env 
+2) Execute Terraform init on the shell on the database folder to get the config
+
